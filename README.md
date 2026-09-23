@@ -7,8 +7,17 @@ Programa de linha de comando em C que carrega uma imagem, converte para escala d
 cinza, exibe o histograma e permite equalizá-lo, alternar a resolução de exibição
 e salvar o resultado.
 
-> **A preencher pelo grupo:** nomes completos, RA de cada integrante e a divisão de
-> contribuições (ver a seção [Contribuições](#contribuições)).
+## Integrantes
+
+| Integrante | RA |
+|---|---|
+| Andrey Bezerra Virginio dos Santos | 10420696 |
+| Bruna Soncini Nunes | 10428267 |
+| Igor Silva Araujo | 10428505 |
+| Julia Vitória Bomfim do Nascimento | 10425604 |
+| William Saran dos Santos Junior | 10420128 |
+
+A divisão do trabalho está descrita na seção [Contribuições](#contribuições).
 
 ---
 
@@ -117,12 +126,49 @@ macOS. O `makefile` copia `assets/` para junto do executável.
 
 | Item | Versão usada no desenvolvimento |
 |---|---|
-| Sistema operacional | *(a preencher: ex. Windows 11 24H2 / Ubuntu 24.04 no WSL)* |
-| Compilador | gcc *(a preencher: ex. 15.1.0 no Windows, 15.2.0 no WSL)* |
-| SDL3 | 3.2.31 |
-| SDL3_image | 3.2.7 |
-| SDL3_ttf | 3.2.3 |
+| Sistema operacional | Windows 11 25H2 |
+| Compilador | gcc 16.2.0 (MSYS2, ambiente UCRT64) |
+| SDL3 | 3.4.16 |
+| SDL3_image | 3.4.6 |
+| SDL3_ttf | 3.2.2 |
 | Padrão da linguagem | C99 |
+
+### Windows com MSYS2
+
+Foi o ambiente usado no desenvolvimento. Instale o [MSYS2](https://www.msys2.org)
+e abra o terminal **MSYS2 UCRT64** (não os outros terminais que o MSYS2 instala,
+pois usam toolchains diferentes). Nele:
+
+```bash
+pacman -Syu
+pacman -S --needed make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf
+pacman -S --needed mingw-w64-ucrt-x86_64-sdl3 mingw-w64-ucrt-x86_64-sdl3-image mingw-w64-ucrt-x86_64-sdl3-ttf
+```
+
+Depois, na pasta do projeto:
+
+```bash
+make
+./build/proj1 caminho_da_imagem.png
+```
+
+Execute sempre pelo terminal do MSYS2: é nele que as DLLs da SDL estão no `PATH`.
+O programa exige o caminho da imagem como argumento, portanto abrir o executável
+por duplo clique apenas imprime a mensagem de uso e encerra.
+
+### Windows com MinGW-w64 avulso
+
+Alternativa sem MSYS2: baixe os pacotes de desenvolvimento `-devel-mingw` de SDL3,
+SDL3_image e SDL3_ttf, extraia para uma pasta única e aponte o `makefile` para ela:
+
+```
+mingw32-make SDL_PREFIX=C:/dev/libs/SDL3
+```
+
+Nesse caso as DLLs (`SDL3.dll`, `SDL3_image.dll`, `SDL3_ttf.dll`) precisam ser
+copiadas para a pasta do executável ou estar no `PATH`. O `makefile` usa `mkdir -p`
+e `cp`, então execute-o a partir de um shell que tenha esses comandos (Git Bash ou
+o próprio MSYS2), e não pelo `cmd` ou PowerShell.
 
 ### Linux / WSL
 
@@ -140,18 +186,6 @@ export PKG_CONFIG_PATH=/caminho/do/prefixo/lib/pkgconfig
 make
 ```
 
-### Windows (MinGW-w64)
-
-Baixe os pacotes de desenvolvimento `-devel-mingw` de SDL3, SDL3_image e SDL3_ttf,
-extraia para uma pasta única e aponte o `makefile` para ela:
-
-```
-mingw32-make SDL_PREFIX=C:/dev/libs/SDL3
-```
-
-As DLLs (`SDL3.dll`, `SDL3_image.dll`, `SDL3_ttf.dll`) precisam estar na pasta do
-executável ou no `PATH`.
-
 ### Limpar
 
 ```
@@ -162,12 +196,39 @@ make clean
 
 ## Contribuições
 
-> **A preencher pelo grupo.** Descreva o que cada integrante fez.
+O trabalho foi dividido por módulo, acompanhando a separação de responsabilidades
+do próprio código: cada frente ficou responsável por um arquivo `.c` e seu
+cabeçalho correspondente.
 
-| Integrante | RA | Contribuição |
+| Integrante | RA | Frente de trabalho |
 |---|---|---|
-| | | |
-| | | |
+| Andrey Bezerra Virginio dos Santos | 10420696 | `image.c` / `image.h` — processamento da imagem |
+| Igor Silva Araujo | 10428505 | `image.c` / `image.h` — processamento da imagem |
+| Julia Vitória Bomfim do Nascimento | 10425604 | `ui.c` / `ui.h` — interface e janelas |
+| Bruna Soncini Nunes | 10428267 | `main.c` — programa principal |
+| William Saran dos Santos Junior | 10420128 | `main.c` — programa principal |
+
+**Processamento da imagem** (`image.c` / `image.h`) — carregamento do arquivo com
+SDL_image, verificação de a imagem ser colorida ou já estar em tons de cinza,
+conversão para escala de cinza pela fórmula de luminância, cálculo do histograma de
+256 níveis, da média de intensidade e do desvio padrão, equalização pela função de
+distribuição acumulada, redimensionamento da imagem exibida e gravação em PNG.
+
+**Interface** (`ui.c` / `ui.h`) — criação da janela principal e da janela
+secundária filha, desenho do histograma e dos textos de análise com primitivas da
+SDL e com SDL_ttf, implementação dos botões com os três estados visuais e
+tratamento dos eventos de mouse.
+
+**Programa principal** (`main.c`) — leitura do argumento de linha de comando,
+inicialização e finalização da SDL e da SDL_ttf, laço de eventos, ligação entre as
+ações da interface e as operações de imagem, e controle do estado de exibição
+(equalizada ou original; resolução original ou 1024x768).
+
+As interfaces entre os módulos — ou seja, os cabeçalhos `image.h` e `ui.h` — foram
+definidas em conjunto antes da implementação, de modo que as três frentes pudessem
+avançar em paralelo sem depender umas das outras. A integração dos módulos, os
+testes com imagens de características diferentes (claras, escuras, de baixo e de
+alto contraste) e os ajustes finais foram feitos pelo grupo em conjunto.
 
 ---
 
